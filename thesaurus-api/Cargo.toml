@@ -1,0 +1,56 @@
+[package]
+name = "thesaurus-api"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "A thesaurus API powered by Axum and Meilisearch with Open English WordNet"
+
+[dependencies]
+# Web framework
+axum = "0.6.18"
+tower = "0.4.13"
+tower-http = { version = "0.4.0", features = ["cors", "trace"] }
+hyper = { version = "0.14.26", features = ["full"] }
+
+# Async runtime
+tokio = { version = "1.28.2", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0.164", features = ["derive"] }
+serde_json = "1.0.96"
+
+# Database
+sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "offline", "json"] }
+
+# Authentication
+jsonwebtoken = "8.3.0"
+bcrypt = "0.14.0"
+uuid = { version = "1.3.3", features = ["v4", "serde"] }
+
+# Environment
+dotenv = "0.15.0"
+envy = "0.4.2"
+
+# Meilisearch
+meilisearch-sdk = "0.24.3"
+
+# Time
+chrono = { version = "0.4.24", features = ["serde"] }
+
+# Logging
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+
+# Error handling
+thiserror = "1.0.40"
+anyhow = "1.0.71"
+
+# Utils
+async-trait = "0.1.68"
+futures = "0.3.28"
+validator = { version = "0.16.0", features = ["derive"] }
+once_cell = "1.17.2"
+
+[dev-dependencies]
+reqwest = { version = "0.11.18", features = ["json"] }
+tokio-test = "0.4.2"
