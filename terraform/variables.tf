@@ -120,13 +120,13 @@ variable "importer_image" {
 variable "domain" {
   description = "Domain name for the application (optional)"
   type        = string
-  default     = ""
+  default = "freesaurus.net"
 }
 
 variable "email" {
   description = "Email address for SSL certificate notifications"
   type        = string
-  default     = "admin@example.com"
+  default = "callumjamesteesdale@gmail.com"
 }
 
 variable "github_username" {
@@ -144,11 +144,11 @@ variable "github_token" {
 variable "wordnet_dump_path" {
   description = "Path to the WordNet dump file (local)"
   type        = string
-  default     = ""
+  default = "../wordnet.dump"
 }
 
 variable "import_dump" {
   description = "Whether to import the WordNet dump during deployment"
   type        = bool
-  default     = false
+  default = true
 }

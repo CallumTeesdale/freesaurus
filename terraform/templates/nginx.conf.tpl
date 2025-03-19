@@ -40,6 +40,12 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+    # Deny access to .git directories and other sensitive paths
+    location ~ /\.(?!well-known) {
+        deny all;
+        return 404;
+    }
+
     # Gzip configuration
     gzip on;
     gzip_vary on;
@@ -52,6 +58,7 @@ server {
     add_header X-Content-Type-Options "nosniff";
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-XSS-Protection "1; mode=block";
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:*;";
     add_header Referrer-Policy "strict-origin-when-cross-origin";
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()";
 }

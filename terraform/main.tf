@@ -17,6 +17,43 @@ resource "local_file" "docker_compose" {
   filename = "${path.module}/files/docker-compose.yml"
 }
 
+resource "null_resource" "copy_wordnet_dump" {
+  count = var.wordnet_dump_path != "" ? 1 : 0
+
+  triggers = {
+    server_id         = hcloud_server.thesaurus.id
+    wordnet_dump_hash = var.wordnet_dump_path != "" ? filemd5(var.wordnet_dump_path) : ""
+  }
+
+  depends_on = [
+    null_resource.setup_server
+  ]
+
+  provisioner "file" {
+    source      = var.wordnet_dump_path
+    destination = "/data/dumps/wordnet.dump"
+    connection {
+      type = "ssh"
+      user = "root"
+      private_key = file(pathexpand(var.ssh_private_key_path))
+      host = hcloud_server.thesaurus.ipv4_address
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod 644 /data/dumps/wordnet.dump",
+      "echo 'WordNet dump file has been copied and is ready for import'"
+    ]
+    connection {
+      type = "ssh"
+      user = "root"
+      private_key = file(pathexpand(var.ssh_private_key_path))
+      host = hcloud_server.thesaurus.ipv4_address
+    }
+  }
+}
+
 # Generate .env file from template
 resource "local_file" "env_file" {
   content = templatefile("${path.module}/templates/env.tpl", {
@@ -100,7 +137,6 @@ resource "hcloud_volume_attachment" "thesaurus_data" {
 resource "hcloud_firewall" "thesaurus" {
   name = "thesaurus-firewall-${var.environment}"
 
-  # Allow SSH access
   rule {
     direction = "in"
     protocol  = "tcp"
@@ -125,26 +161,6 @@ resource "hcloud_firewall" "thesaurus" {
     direction = "in"
     protocol  = "tcp"
     port      = "443"
-    source_ips = [
-      "0.0.0.0/0",
-      "::/0"
-    ]
-  }
-
-  rule {
-    direction = "in"
-    protocol  = "tcp"
-    port      = "3000"
-    source_ips = [
-      "0.0.0.0/0",
-      "::/0"
-    ]
-  }
-
-  rule {
-    direction = "in"
-    protocol  = "tcp"
-    port      = "7700"
     source_ips = [
       "0.0.0.0/0",
       "::/0"
@@ -214,8 +230,8 @@ resource "null_resource" "setup_server" {
       "ufw allow ssh",
       "ufw allow 80/tcp",
       "ufw allow 443/tcp",
-      "ufw allow 3000/tcp",
-      "ufw allow 7700/tcp",
+      "ufw allow from 127.0.0.1 to any port 3000 proto tcp comment 'Allow API from localhost'",
+      "ufw allow from 127.0.0.1 to any port 7700 proto tcp comment 'Allow MeiliSearch from localhost'",
       "echo y | ufw enable",
 
       # Enable fail2ban
@@ -244,19 +260,6 @@ resource "null_resource" "setup_server" {
       private_key = file(pathexpand(var.ssh_private_key_path))
       host = hcloud_server.thesaurus.ipv4_address
     }
-  }
-
-  # Copy WordNet dump file if provided
-  provisioner "file" {
-    source      = var.wordnet_dump_path
-    destination = "/data/dumps/wordnet.dump"
-    connection {
-      type = "ssh"
-      user = "root"
-      private_key = file(pathexpand(var.ssh_private_key_path))
-      host = hcloud_server.thesaurus.ipv4_address
-    }
-    count = var.wordnet_dump_path != "" ? 1 : 0
   }
 
   # Copy nginx configuration
@@ -324,8 +327,9 @@ resource "null_resource" "setup_server" {
       "docker-compose up -d",
       "echo 'Waiting for services to be ready...'",
       "sleep 60",
+      # Only run the WordNet importer if we're not importing from a dump
         var.import_dump && var.wordnet_dump_path != "" ? "echo 'Skipping WordNet import as dump is being used'" :
-        "echo 'Importing WordNet data...' && docker pull ${var.importer_image} && docker run -it --network=host -e MEILI_URL=http://localhost:7700 -e MEILI_KEY=${var.meili_master_key} ${var.importer_image} || echo 'WordNet import failed, but continuing...'"
+        "echo 'Importing WordNet data...' && docker pull ${var.importer_image} && docker run --rm --network=host -e MEILI_URL=http://localhost:7700 -e MEILI_KEY=${var.meili_master_key} ${var.importer_image} || echo 'WordNet import failed, but continuing...'"
     ]
     connection {
       type = "ssh"
@@ -335,3 +339,4 @@ resource "null_resource" "setup_server" {
     }
   }
 }
+
