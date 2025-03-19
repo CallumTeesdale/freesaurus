@@ -24,6 +24,10 @@ importer_image    = "ghcr.io/callumteesdale/wordnet-importer:latest"
 domain            = ""
 email             = ""
 
-# Gihub
+# Github
 github_username  = "callumteesdale"
 github_token     = "your_github_token"
+
+# WordNet dump configuration
+wordnet_dump_path = "wordnet.dump"  # Path to the WordNet dump file
+import_dump      = true             # Set to true to import the dump during deployment

@@ -140,3 +140,15 @@ variable "github_token" {
   type        = string
   sensitive   = true
 }
+
+variable "wordnet_dump_path" {
+  description = "Path to the WordNet dump file (local)"
+  type        = string
+  default     = ""
+}
+
+variable "import_dump" {
+  description = "Whether to import the WordNet dump during deployment"
+  type        = bool
+  default     = false
+}

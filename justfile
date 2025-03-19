@@ -263,6 +263,24 @@ update-compose: push
             sed -i "s|${GITHUB_USER_LOWER}/wordnet-importer:[^[:space:]\"]*|${GITHUB_USER_LOWER}/wordnet-importer:${COMMIT_HASH}|g" ./temp-compose.yml
         fi
 
+        if [ -f "wordnet.dump" ]; then
+            echo "Copying wordnet.dump to server..."
+            # Make sure the directory exists
+            ssh root@$SERVER_IP "mkdir -p /data/dumps"
+            # Copy the file
+            scp wordnet.dump root@$SERVER_IP:/data/dumps/wordnet.dump
+
+            # Update environment variable to enable dump import
+            if [[ "$(uname)" == "Darwin" ]]; then
+                # For macOS
+                sed -i '' 's|IMPORT_DUMP:.*|IMPORT_DUMP: true|' ./temp-compose.yml
+            else
+                # For Linux
+                sed -i 's|IMPORT_DUMP:.*|IMPORT_DUMP: true|' ./temp-compose.yml
+            fi
+            echo "Updated MeiliSearch configuration to import the WordNet dump file"
+        fi
+
         scp ./temp-compose.yml root@$SERVER_IP:/root/docker-compose.yml
         rm ./temp-compose.yml
 

@@ -12,10 +12,10 @@ resource "local_file" "docker_compose" {
     frontend_image    = var.frontend_image
     importer_image    = var.importer_image
     domain            = var.domain
+    import_dump = var.import_dump && var.wordnet_dump_path != "" ? "true" : "false"
   })
   filename = "${path.module}/files/docker-compose.yml"
 }
-
 
 # Generate .env file from template
 resource "local_file" "env_file" {
@@ -34,6 +34,15 @@ resource "local_file" "env_file" {
   })
   filename = "${path.module}/files/.env.generated"
 }
+
+# Generate nginx configuration from template
+resource "local_file" "nginx_conf" {
+  content = templatefile("${path.module}/templates/nginx.conf.tpl", {
+    domain = var.domain
+  })
+  filename = "${path.module}/files/nginx.conf"
+}
+
 resource "hcloud_ssh_key" "default" {
   name = "thesaurus-${var.environment}-key"
   public_key = file(pathexpand(var.ssh_public_key_path))
@@ -157,6 +166,7 @@ resource "hcloud_firewall_attachment" "thesaurus" {
 resource "null_resource" "setup_server" {
   triggers = {
     server_id = hcloud_server.thesaurus.id
+    wordnet_dump_hash = var.wordnet_dump_path != "" ? filemd5(var.wordnet_dump_path) : ""
   }
 
   # Wait for the server and volume to be ready
@@ -164,7 +174,8 @@ resource "null_resource" "setup_server" {
     hcloud_server.thesaurus,
     hcloud_volume_attachment.thesaurus_data,
     local_file.docker_compose,
-    local_file.env_file
+    local_file.env_file,
+    local_file.nginx_conf
   ]
 
   # Setup script - all in one provisioner to ensure proper sequence
@@ -188,7 +199,7 @@ resource "null_resource" "setup_server" {
       "chmod +x /usr/local/bin/docker-compose",
 
       # Setup directories
-      "mkdir -p /data/postgres /data/meilisearch",
+      "mkdir -p /data/postgres /data/meilisearch /data/dumps",
       "mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled",
 
       # Mount volume
@@ -235,41 +246,34 @@ resource "null_resource" "setup_server" {
     }
   }
 
-  # Generate nginx configuration
+  # Copy WordNet dump file if provided
+  provisioner "file" {
+    source      = var.wordnet_dump_path
+    destination = "/data/dumps/wordnet.dump"
+    connection {
+      type = "ssh"
+      user = "root"
+      private_key = file(pathexpand(var.ssh_private_key_path))
+      host = hcloud_server.thesaurus.ipv4_address
+    }
+    count = var.wordnet_dump_path != "" ? 1 : 0
+  }
+
+  # Copy nginx configuration
+  provisioner "file" {
+    source      = "${path.module}/files/nginx.conf"
+    destination = "/etc/nginx/sites-available/thesaurus"
+    connection {
+      type = "ssh"
+      user = "root"
+      private_key = file(pathexpand(var.ssh_private_key_path))
+      host = hcloud_server.thesaurus.ipv4_address
+    }
+  }
+
+  # Configure nginx
   provisioner "remote-exec" {
     inline = [
-      "cat > /etc/nginx/sites-available/thesaurus << EOL",
-      "server {",
-      "    listen 80;",
-      "    listen [::]:80;",
-      "    server_name _;",
-      "    # Frontend",
-      "    location / {",
-      "        proxy_pass http://localhost:8080;",
-      "        proxy_http_version 1.1;",
-      "        proxy_set_header Upgrade \\$http_upgrade;",
-      "        proxy_set_header Connection 'upgrade';",
-      "        proxy_set_header Host \\$host;",
-      "        proxy_cache_bypass \\$http_upgrade;",
-      "    }",
-      "    # API",
-      "    location /api/ {",
-      "        proxy_pass http://localhost:3000/api/;",
-      "        proxy_http_version 1.1;",
-      "        proxy_set_header Upgrade \\$http_upgrade;",
-      "        proxy_set_header Connection 'upgrade';",
-      "        proxy_set_header Host \\$host;",
-      "        proxy_cache_bypass \\$http_upgrade;",
-      "    }",
-      "    # Health check",
-      "    location /health {",
-      "        proxy_pass http://localhost:3000/health;",
-      "        proxy_http_version 1.1;",
-      "        proxy_set_header Host \\$host;",
-      "        proxy_cache_bypass \\$http_upgrade;",
-      "    }",
-      "}",
-      "EOL",
       "ln -sf /etc/nginx/sites-available/thesaurus /etc/nginx/sites-enabled/",
       "rm -f /etc/nginx/sites-enabled/default",
       "nginx -t && systemctl reload nginx"
@@ -293,7 +297,6 @@ resource "null_resource" "setup_server" {
       host = hcloud_server.thesaurus.ipv4_address
     }
   }
-
 
   # Setup SSL if domain is provided
   provisioner "remote-exec" {
@@ -321,9 +324,8 @@ resource "null_resource" "setup_server" {
       "docker-compose up -d",
       "echo 'Waiting for services to be ready...'",
       "sleep 60",
-      "echo 'Importing WordNet data...'",
-      "docker pull ${var.importer_image}",
-      "docker run -it --network=host -e MEILI_URL=http://localhost:7700 -e MEILI_KEY=${var.meili_master_key} ${var.importer_image} || echo 'WordNet import failed, but continuing...'"
+        var.import_dump && var.wordnet_dump_path != "" ? "echo 'Skipping WordNet import as dump is being used'" :
+        "echo 'Importing WordNet data...' && docker pull ${var.importer_image} && docker run -it --network=host -e MEILI_URL=http://localhost:7700 -e MEILI_KEY=${var.meili_master_key} ${var.importer_image} || echo 'WordNet import failed, but continuing...'"
     ]
     connection {
       type = "ssh"

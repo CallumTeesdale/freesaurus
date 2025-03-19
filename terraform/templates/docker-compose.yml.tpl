@@ -27,8 +27,11 @@ services:
       MEILI_MASTER_KEY: ${meili_master_key}
       MEILI_NO_ANALYTICS: true
       MEILI_ENV: production
+      IMPORT_DUMP: ${import_dump}
     volumes:
-      - /data/meilisearch:/data.ms
+      - /data/meilisearch:/meili_data/data.ms
+      - /data/dumps:/meili_data/dumps
+    entrypoint: ["/bin/sh", "-c", "if [ \"$$IMPORT_DUMP\" = \"true\" ] && [ -f /meili_data/dumps/wordnet.dump ]; then meilisearch --import-dump /meili_data/dumps/wordnet.dump; else meilisearch; fi"]
     ports:
       - "7700:7700"
     healthcheck:
