@@ -4,40 +4,40 @@
 /* Global styles */
 html,
 body {
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
 }
 
 /* Fix for iOS Safari 100vh issue */
 @supports (-webkit-touch-callout: none) {
-  .vh-100 {
-    height: -webkit-fill-available;
-  }
+    .vh-100 {
+        height: -webkit-fill-available;
+    }
 }
 
 /* Smooth scrolling */
 html {
-  scroll-behavior: smooth;
+    scroll-behavior: smooth;
 }
 
 /* Better focus styles */
 :focus {
-  outline: 2px solid var(--mantine-primary-color-6);
-  outline-offset: 2px;
+    outline: 2px solid var(--mantine-primary-color-6);
+    outline-offset: 2px;
 }
 
 /* When focus is managed with JavaScript */
 :focus:not(:focus-visible) {
-  outline: none;
+    outline: none;
 }
 
 /* Improve selection */
 ::selection {
-  background-color: var(--mantine-primary-color-2);
+    background-color: var(--mantine-primary-color-2);
 }
 
 /* Mobile tap highlight */
 * {
-  -webkit-tap-highlight-color: transparent;
+    -webkit-tap-highlight-color: transparent;
 }

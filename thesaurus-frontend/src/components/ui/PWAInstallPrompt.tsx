@@ -1,20 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import {
-    Button,
-    Group,
-    Paper,
-    Stack,
-    Text,
-    ThemeIcon,
-    UnstyledButton,
-    useMantineTheme
-} from '@mantine/core';
-import {
-    IconDownload,
-    IconDeviceMobile,
-    IconX,
-    IconDeviceLaptop
-} from '@tabler/icons-react';
+import {useEffect, useRef, useState} from 'react';
+import {Button, Group, Paper, Stack, Text, ThemeIcon, UnstyledButton, useMantineTheme} from '@mantine/core';
+import {IconDeviceLaptop, IconDeviceMobile, IconDownload, IconX} from '@tabler/icons-react';
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
@@ -102,7 +88,7 @@ const PWAInstallPrompt = () => {
                     right: 8
                 }}
             >
-                <IconX size={18} color={theme.colors.gray[6]} />
+                <IconX size={18} color={theme.colors.gray[6]}/>
             </UnstyledButton>
 
             <Group align="flex-start" wrap="nowrap">
@@ -113,11 +99,11 @@ const PWAInstallPrompt = () => {
                     color="blue"
                 >
                     {installPlatform === 'mobile'
-                        ? <IconDeviceMobile size={24} />
-                        : <IconDeviceLaptop size={24} />}
+                        ? <IconDeviceMobile size={24}/>
+                        : <IconDeviceLaptop size={24}/>}
                 </ThemeIcon>
 
-                <Stack style={{ flex: 1 }}>
+                <Stack style={{flex: 1}}>
                     <Text fw={600} size="md">
                         Install FreeSaurus
                     </Text>
@@ -130,10 +116,10 @@ const PWAInstallPrompt = () => {
                     <Group mt="xs">
                         <Button
                             size="sm"
-                            leftSection={<IconDownload size={16} />}
+                            leftSection={<IconDownload size={16}/>}
                             onClick={handleInstallClick}
                             variant="gradient"
-                            gradient={{ from: theme.colors.blue[6], to: theme.colors.indigo[5] }}
+                            gradient={{from: theme.colors.blue[6], to: theme.colors.indigo[5]}}
                         >
                             Install
                         </Button>

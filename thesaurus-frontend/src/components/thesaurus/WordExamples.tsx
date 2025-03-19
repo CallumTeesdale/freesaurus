@@ -1,23 +1,12 @@
-import {
-    Badge,
-    Card,
-    Group,
-    Paper,
-    Stack,
-    Text,
-    Title,
-    ThemeIcon,
-    Flex,
-    useMantineTheme
-} from "@mantine/core";
-import { IconMessageCircle, IconQuote } from "@tabler/icons-react";
+import {Badge, Card, Flex, Group, Paper, Stack, Text, ThemeIcon, Title, useMantineTheme} from "@mantine/core";
+import {IconMessageCircle, IconQuote} from "@tabler/icons-react";
 
 interface WordExamplesProps {
     examples: string[];
     word: string;
 }
 
-const WordExamples = ({ examples, word }: WordExamplesProps) => {
+const WordExamples = ({examples, word}: WordExamplesProps) => {
     const theme = useMantineTheme();
 
     if (!examples || examples.length === 0) {
@@ -25,7 +14,7 @@ const WordExamples = ({ examples, word }: WordExamplesProps) => {
             <Paper withBorder p="xl" radius="md">
                 <Flex align="center" gap="md" mb="md">
                     <ThemeIcon size="lg" radius="md" color="indigo" variant="light">
-                        <IconMessageCircle size={16} />
+                        <IconMessageCircle size={16}/>
                     </ThemeIcon>
                     <Text fw={500} fz="lg">No examples available</Text>
                 </Flex>
@@ -57,7 +46,7 @@ const WordExamples = ({ examples, word }: WordExamplesProps) => {
             <Flex justify="space-between" align="center" mb="md">
                 <Group gap="md">
                     <ThemeIcon size="lg" radius="md" color="indigo">
-                        <IconMessageCircle size={16} />
+                        <IconMessageCircle size={16}/>
                     </ThemeIcon>
                     <Title order={4}>Examples</Title>
                 </Group>
@@ -94,9 +83,9 @@ const WordExamples = ({ examples, word }: WordExamplesProps) => {
                                 radius="xl"
                                 color="indigo"
                                 variant="light"
-                                style={{ flexShrink: 0 }}
+                                style={{flexShrink: 0}}
                             >
-                                <IconQuote size={18} />
+                                <IconQuote size={18}/>
                             </ThemeIcon>
                             <Text size="md" lh={1.6}>{highlightWord(example)}</Text>
                         </Flex>

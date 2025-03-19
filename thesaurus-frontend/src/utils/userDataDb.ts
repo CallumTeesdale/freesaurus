@@ -1,4 +1,4 @@
-import { Word } from "../types";
+import {Word} from "../types";
 
 const DB_NAME = 'freesaurus-user-data';
 const DB_VERSION = 1;
@@ -28,7 +28,7 @@ const openDB = (): Promise<IDBDatabase> => {
             const db = (event.target as IDBOpenDBRequest).result;
 
             if (!db.objectStoreNames.contains('favorites')) {
-                db.createObjectStore('favorites', { keyPath: 'word' });
+                db.createObjectStore('favorites', {keyPath: 'word'});
             }
 
             if (!db.objectStoreNames.contains('recent-searches')) {
@@ -39,7 +39,7 @@ const openDB = (): Promise<IDBDatabase> => {
             }
 
             if (!db.objectStoreNames.contains('word-cache')) {
-                db.createObjectStore('word-cache', { keyPath: 'word' });
+                db.createObjectStore('word-cache', {keyPath: 'word'});
             }
         };
 

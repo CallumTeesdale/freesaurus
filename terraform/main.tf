@@ -35,7 +35,7 @@ resource "local_file" "env_file" {
   filename = "${path.module}/files/.env.generated"
 }
 resource "hcloud_ssh_key" "default" {
-  name       = "thesaurus-${var.environment}-key"
+  name = "thesaurus-${var.environment}-key"
   public_key = file(pathexpand(var.ssh_public_key_path))
 }
 
@@ -52,7 +52,7 @@ resource "hcloud_server" "thesaurus" {
   server_type = var.server_type
   image       = var.os_type
   location    = var.region
-  ssh_keys    = [hcloud_ssh_key.default.id]
+  ssh_keys = [hcloud_ssh_key.default.id]
   public_net {
     ipv4_enabled = true
     ipv6_enabled = true
@@ -71,11 +71,11 @@ resource "hcloud_server" "thesaurus" {
       "apt install -y curl"
     ]
     connection {
-      type        = "ssh"
-      user        = "root"
+      type    = "ssh"
+      user    = "root"
       private_key = file(pathexpand(var.ssh_private_key_path))
-      host        = self.ipv4_address
-      timeout     = "5m"
+      host    = self.ipv4_address
+      timeout = "5m"
     }
   }
 
@@ -143,15 +143,15 @@ resource "hcloud_firewall" "thesaurus" {
   }
 
   rule {
-    direction  = "in"
-    protocol   = "icmp"
+    direction = "in"
+    protocol  = "icmp"
     source_ips = ["0.0.0.0/0", "::/0"]
   }
 }
 
 resource "hcloud_firewall_attachment" "thesaurus" {
   firewall_id = hcloud_firewall.thesaurus.id
-  server_ids  = [hcloud_server.thesaurus.id]
+  server_ids = [hcloud_server.thesaurus.id]
 }
 
 resource "null_resource" "setup_server" {
@@ -215,11 +215,11 @@ resource "null_resource" "setup_server" {
       "docker network create thesaurus-network || echo 'Network already exists'"
     ]
     connection {
-      type        = "ssh"
-      user        = "root"
+      type    = "ssh"
+      user    = "root"
       private_key = file(pathexpand(var.ssh_private_key_path))
-      host        = hcloud_server.thesaurus.ipv4_address
-      timeout     = "10m"
+      host    = hcloud_server.thesaurus.ipv4_address
+      timeout = "10m"
     }
   }
 
@@ -228,10 +228,10 @@ resource "null_resource" "setup_server" {
     source      = "${path.module}/files/docker-compose.yml"
     destination = "/root/docker-compose.yml"
     connection {
-      type        = "ssh"
-      user        = "root"
+      type = "ssh"
+      user = "root"
       private_key = file(pathexpand(var.ssh_private_key_path))
-      host        = hcloud_server.thesaurus.ipv4_address
+      host = hcloud_server.thesaurus.ipv4_address
     }
   }
 
@@ -275,10 +275,10 @@ resource "null_resource" "setup_server" {
       "nginx -t && systemctl reload nginx"
     ]
     connection {
-      type        = "ssh"
-      user        = "root"
+      type = "ssh"
+      user = "root"
       private_key = file(pathexpand(var.ssh_private_key_path))
-      host        = hcloud_server.thesaurus.ipv4_address
+      host = hcloud_server.thesaurus.ipv4_address
     }
   }
 
@@ -305,10 +305,10 @@ resource "null_resource" "setup_server" {
     ] : ["echo 'Skipping SSL setup as no domain was provided'"]
 
     connection {
-      type        = "ssh"
-      user        = "root"
+      type = "ssh"
+      user = "root"
       private_key = file(pathexpand(var.ssh_private_key_path))
-      host        = hcloud_server.thesaurus.ipv4_address
+      host = hcloud_server.thesaurus.ipv4_address
     }
   }
 
@@ -326,10 +326,10 @@ resource "null_resource" "setup_server" {
       "docker run -it --network=host -e MEILI_URL=http://localhost:7700 -e MEILI_KEY=${var.meili_master_key} ${var.importer_image} || echo 'WordNet import failed, but continuing...'"
     ]
     connection {
-      type        = "ssh"
-      user        = "root"
+      type = "ssh"
+      user = "root"
       private_key = file(pathexpand(var.ssh_private_key_path))
-      host        = hcloud_server.thesaurus.ipv4_address
+      host = hcloud_server.thesaurus.ipv4_address
     }
   }
 }

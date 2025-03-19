@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Box } from "@mantine/core";
+import {useEffect, useState} from "react";
+import {AnimatePresence, motion} from "framer-motion";
+import {Box} from "@mantine/core";
 import WordDetail from "./WordDetail";
 
 interface AnimatedWordDetailProps {
@@ -8,7 +8,7 @@ interface AnimatedWordDetailProps {
 }
 
 const containerVariants = {
-    hidden: { opacity: 0 },
+    hidden: {opacity: 0},
     visible: {
         opacity: 1,
         transition: {
@@ -16,7 +16,7 @@ const containerVariants = {
         }
     }
 };
-const AnimatedWordDetail = ({ word }: AnimatedWordDetailProps) => {
+const AnimatedWordDetail = ({word}: AnimatedWordDetailProps) => {
     const [currentWord, setCurrentWord] = useState(word);
     const [isChanging, setIsChanging] = useState(false);
 
@@ -41,7 +41,7 @@ const AnimatedWordDetail = ({ word }: AnimatedWordDetailProps) => {
                     exit="hidden"
                     variants={containerVariants}
                 >
-                    {!isChanging && <WordDetail word={currentWord} />}
+                    {!isChanging && <WordDetail word={currentWord}/>}
                 </motion.div>
             </AnimatePresence>
         </Box>

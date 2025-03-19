@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Box, Collapse, Group, Paper, Text, useMantineTheme } from '@mantine/core';
-import { IconWifiOff } from '@tabler/icons-react';
+import {useEffect, useState} from 'react';
+import {Box, Collapse, Group, Paper, Text, useMantineTheme} from '@mantine/core';
+import {IconWifiOff} from '@tabler/icons-react';
 
 const OfflineIndicator = () => {
     const [isOffline, setIsOffline] = useState<boolean>(!navigator.onLine);
@@ -41,7 +41,7 @@ const OfflineIndicator = () => {
                     }}
                 >
                     <Group>
-                        <IconWifiOff size={24} color={theme.colors.yellow[7]} />
+                        <IconWifiOff size={24} color={theme.colors.yellow[7]}/>
                         <div>
                             <Text fw={500}>You are currently offline</Text>
                             <Text size="sm" c="dimmed">

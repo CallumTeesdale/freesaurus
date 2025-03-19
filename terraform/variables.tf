@@ -10,7 +10,7 @@ variable "environment" {
   default     = "production"
 
   validation {
-    condition     = contains(["production", "staging"], var.environment)
+    condition = contains(["production", "staging"], var.environment)
     error_message = "Environment must be 'production' or 'staging'."
   }
 }
@@ -132,7 +132,7 @@ variable "email" {
 variable "github_username" {
   description = "GitHub username for container registry access"
   type        = string
-  default = "callumteesdale"
+  default     = "callumteesdale"
 }
 
 variable "github_token" {

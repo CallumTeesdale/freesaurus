@@ -1,6 +1,6 @@
-import { ReactNode } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import {ReactNode} from "react";
+import {Route, Routes, useLocation} from "react-router-dom";
+import {AnimatePresence, motion} from "framer-motion";
 
 interface RouteConfig {
     path: string;
@@ -32,7 +32,7 @@ const pageTransition = {
     duration: 0.4,
 };
 
-const AnimatedRoutes = ({ routes }: AnimatedRoutesProps) => {
+const AnimatedRoutes = ({routes}: AnimatedRoutesProps) => {
     const location = useLocation();
 
     return (

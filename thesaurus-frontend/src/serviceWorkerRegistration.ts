@@ -71,7 +71,7 @@ function registerValidSW(swUrl: string, config?: Config): void {
 
 function checkValidServiceWorker(swUrl: string, config?: Config): void {
     fetch(swUrl, {
-        headers: { 'Service-Worker': 'script' },
+        headers: {'Service-Worker': 'script'},
     })
         .then((response) => {
             const contentType = response.headers.get('content-type');

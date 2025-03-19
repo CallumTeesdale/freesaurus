@@ -1,6 +1,6 @@
 #!/usr/bin/env just --justfile
-
 # Variables
+
 GITHUB_USER := env_var_or_default("GITHUB_USER", "yourUsername")
 GITHUB_REPO := env_var_or_default("GITHUB_REPO", "yourRepoName")
 GITHUB_USER_LOWER := `echo $GITHUB_USER | tr '[:upper:]' '[:lower:]'`
@@ -10,7 +10,9 @@ HETZNER_TOKEN := env_var_or_default("HETZNER_TOKEN", "")
 DOMAIN := env_var_or_default("DOMAIN", "")
 ADMIN_EMAIL := env_var_or_default("ADMIN_EMAIL", "")
 GITHUB_USERNAME := env_var_or_default("GITHUB_USERNAME", "CallumTeesdale")
+
 # Get commit hash (make sure this runs in a git repository)
+
 _commit_hash := `git rev-parse --short HEAD 2>/dev/null || echo "latest"`
 ENV := env_var_or_default("ENV", "production")
 
@@ -41,11 +43,10 @@ build:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    COMMIT_HASH={{_commit_hash}}
+    COMMIT_HASH={{ _commit_hash }}
     echo "Building Docker images with tag $COMMIT_HASH..."
 
-    # Convert to lowercase for Docker requirements
-    GITHUB_USER_LOWER={{GITHUB_USER_LOWER}}
+    GITHUB_USER_LOWER={{ GITHUB_USER_LOWER }}
 
     docker build -t ghcr.io/$GITHUB_USER_LOWER/thesaurus-api:latest -t ghcr.io/$GITHUB_USER_LOWER/thesaurus-api:$COMMIT_HASH ./thesaurus-api
     docker build -t ghcr.io/$GITHUB_USER_LOWER/wordnet-importer:latest -t ghcr.io/$GITHUB_USER_LOWER/wordnet-importer:$COMMIT_HASH ./wordnet-importer
@@ -58,11 +59,10 @@ push: login build
     #!/usr/bin/env bash
     set -euo pipefail
 
-    COMMIT_HASH={{_commit_hash}}
+    COMMIT_HASH={{ _commit_hash }}
     echo "Pushing Docker images with tag $COMMIT_HASH to GitHub Container Registry..."
 
-    # Convert to lowercase for Docker requirements
-    GITHUB_USER_LOWER={{GITHUB_USER_LOWER}}
+    GITHUB_USER_LOWER={{ GITHUB_USER_LOWER }}
 
     docker push ghcr.io/$GITHUB_USER_LOWER/thesaurus-api:latest
     docker push ghcr.io/$GITHUB_USER_LOWER/thesaurus-api:$COMMIT_HASH
@@ -99,22 +99,18 @@ create-tfvars: validate-env
     #!/usr/bin/env bash
     set -euo pipefail
 
-    COMMIT_HASH={{_commit_hash}}
+    COMMIT_HASH={{ _commit_hash }}
     echo "Using commit hash: $COMMIT_HASH"
 
-    # Convert to lowercase for Docker requirements
-    GITHUB_USER_LOWER={{GITHUB_USER_LOWER}}
+    GITHUB_USER_LOWER={{ GITHUB_USER_LOWER }}
 
-    # Check if .env.secrets exists, generate if not
     if [ ! -f ".env.secrets" ]; then
         echo "No .env.secrets file found. Generating secrets..."
         just generate-secrets
     fi
 
-    # Load secrets from .env.secrets
     source .env.secrets
 
-    # Create terraform.tfvars
     cat > ./terraform/terraform.tfvars << EOL
     hcloud_token       = "$HETZNER_TOKEN"
     environment        = "$ENV"
@@ -233,11 +229,10 @@ clean:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    COMMIT_HASH={{_commit_hash}}
+    COMMIT_HASH={{ _commit_hash }}
     echo "Cleaning up Docker images with tag $COMMIT_HASH..."
 
-    # Convert to lowercase for Docker requirements
-    GITHUB_USER_LOWER={{GITHUB_USER_LOWER}}
+    GITHUB_USER_LOWER={{ GITHUB_USER_LOWER }}
 
     docker rmi ghcr.io/$GITHUB_USER_LOWER/thesaurus-api:latest ghcr.io/$GITHUB_USER_LOWER/thesaurus-api:$COMMIT_HASH \
       ghcr.io/$GITHUB_USER_LOWER/wordnet-importer:latest ghcr.io/$GITHUB_USER_LOWER/wordnet-importer:$COMMIT_HASH \
@@ -247,8 +242,8 @@ update-compose: push
     #!/usr/bin/env bash
     set -euo pipefail
 
-    COMMIT_HASH={{_commit_hash}}
-    GITHUB_USER_LOWER={{GITHUB_USER_LOWER}}
+    COMMIT_HASH={{ _commit_hash }}
+    GITHUB_USER_LOWER={{ GITHUB_USER_LOWER }}
     SERVER_IP=$(cd terraform && tofu output -raw server_ip 2>/dev/null || echo "No server deployed yet")
 
     if [ "$SERVER_IP" != "No server deployed yet" ]; then
@@ -256,7 +251,6 @@ update-compose: push
 
         ssh root@$SERVER_IP "cat /root/docker-compose.yml" > ./temp-compose.yml
 
-        # Check if we're running on macOS (BSD sed) or Linux (GNU sed)
         if [[ "$(uname)" == "Darwin" ]]; then
             # macOS - BSD sed requires an extension argument (empty string in this case)
             sed -i '' "s|${GITHUB_USER_LOWER}/thesaurus-api:[^[:space:]\"]*|${GITHUB_USER_LOWER}/thesaurus-api:${COMMIT_HASH}|g" ./temp-compose.yml
@@ -272,17 +266,13 @@ update-compose: push
         scp ./temp-compose.yml root@$SERVER_IP:/root/docker-compose.yml
         rm ./temp-compose.yml
 
-        # Create a temporary file for GitHub token
         GITHUB_TOKEN_FILE=$(mktemp)
         echo "$GITHUB_TOKEN" > "$GITHUB_TOKEN_FILE"
 
-        # Transfer the token file
         scp "$GITHUB_TOKEN_FILE" root@$SERVER_IP:/tmp/github_token
 
-        # Clean up the local temporary file
         rm "$GITHUB_TOKEN_FILE"
 
-        # Use GITHUB_USER_LOWER for docker login
         ssh root@$SERVER_IP "cat /tmp/github_token | docker login ghcr.io -u ${GITHUB_USER_LOWER} --password-stdin && \
             rm /tmp/github_token && \
             cd /root && \

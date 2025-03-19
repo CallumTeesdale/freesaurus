@@ -1,18 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-    Box,
-    Button,
-    Flex,
-    Kbd,
-    Paper,
-    Text,
-    TextInput,
-    Title,
-    useMantineTheme,
-    Group,
-} from "@mantine/core";
-import { IconSearch } from "@tabler/icons-react";
+import React, {useEffect, useRef, useState} from "react";
+import {useNavigate} from "react-router-dom";
+import {Box, Button, Flex, Group, Kbd, Paper, Text, TextInput, Title, useMantineTheme,} from "@mantine/core";
+import {IconSearch} from "@tabler/icons-react";
 import GradientBackground from "../components/ui/GradientBackground";
 
 const HomePage = () => {
@@ -94,10 +83,10 @@ const HomePage = () => {
                     FreeSaurus
                 </Title>
 
-                <Box w="100%" style={{ maxWidth: "650px", width: "650px", padding: "0 15px" }}>
-                    <form onSubmit={handleSearch} style={{ width: "100%" }}>
+                <Box w="100%" style={{maxWidth: "650px", width: "650px", padding: "0 15px"}}>
+                    <form onSubmit={handleSearch} style={{width: "100%"}}>
                         <Paper
-                            p={{ base: "xs", sm: "md" }}
+                            p={{base: "xs", sm: "md"}}
                             radius="xl"
                             shadow="xl"
                             w="100%"
@@ -115,8 +104,8 @@ const HomePage = () => {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.currentTarget.value)}
                                     radius="xl"
-                                    leftSection={<IconSearch size={18} color={theme.colors.blue[6]} />}
-                                    style={{ flex: 1 }}
+                                    leftSection={<IconSearch size={18} color={theme.colors.blue[6]}/>}
+                                    style={{flex: 1}}
                                     styles={{
                                         input: {
                                             background: "rgba(255, 255, 255, 0.9)",
@@ -132,7 +121,7 @@ const HomePage = () => {
                                 <Button
                                     type="submit"
                                     radius="xl"
-                                    gradient={{ from: theme.colors.blue[7], to: theme.colors.indigo[5], deg: 45 }}
+                                    gradient={{from: theme.colors.blue[7], to: theme.colors.indigo[5], deg: 45}}
                                     variant="gradient"
                                 >
                                     Search

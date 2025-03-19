@@ -1,15 +1,8 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-    searchWords,
-    getWord,
-    getRelatedWords,
-    getDefinition,
-    getExamples,
-    getAllRelations
-} from '../api/thesaurusApi';
-import { RelationType, SearchFilters } from '@/types';
-import { useEffect } from 'react';
-import { addToRecentSearches } from '../utils/userDataDb';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {getAllRelations, getDefinition, getExamples, getRelatedWords, getWord, searchWords} from '../api/thesaurusApi';
+import {RelationType, SearchFilters} from '@/types';
+import {useEffect} from 'react';
+import {addToRecentSearches} from '../utils/userDataDb';
 
 export const queryKeys = {
     search: 'search',

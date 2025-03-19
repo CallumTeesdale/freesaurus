@@ -1,6 +1,7 @@
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import {useNavigate} from "react-router-dom";
+import {motion} from "framer-motion";
 import {
+    ActionIcon,
     Badge,
     Box,
     Card,
@@ -9,25 +10,24 @@ import {
     Paper,
     Stack,
     Text,
-    Title,
-    ActionIcon,
     ThemeIcon,
+    Title,
     Tooltip,
     useMantineTheme,
 } from "@mantine/core";
 import {
     IconArrowDown,
     IconArrowRight,
-    IconArrowUp,
     IconArrowsExchange,
     IconArrowsHorizontal,
+    IconArrowUp,
     IconChevronRight,
     IconCopy,
     IconInfoCircle,
 } from "@tabler/icons-react";
 
-import { RelationType, relationTypes } from "@/types";
-import { notifications } from "@mantine/notifications";
+import {RelationType, relationTypes} from "@/types";
+import {notifications} from "@mantine/notifications";
 
 interface RelatedWordsProps {
     words: string[];
@@ -36,7 +36,7 @@ interface RelatedWordsProps {
 }
 
 const containerVariants = {
-    hidden: { opacity: 0 },
+    hidden: {opacity: 0},
     visible: {
         opacity: 1,
         transition: {
@@ -46,7 +46,7 @@ const containerVariants = {
 };
 
 const itemVariants = {
-    hidden: { opacity: 0, y: 20, scale: 0.9 },
+    hidden: {opacity: 0, y: 20, scale: 0.9},
     visible: {
         opacity: 1,
         y: 0,
@@ -75,17 +75,17 @@ const StaggeredRelatedWords = ({
     const getRelationIcon = (type: RelationType) => {
         switch (type) {
             case RelationType.Synonym:
-                return <IconArrowsExchange size={16} />;
+                return <IconArrowsExchange size={16}/>;
             case RelationType.Antonym:
-                return <IconArrowRight size={16} />;
+                return <IconArrowRight size={16}/>;
             case RelationType.BroaderTerm:
-                return <IconArrowUp size={16} />;
+                return <IconArrowUp size={16}/>;
             case RelationType.NarrowerTerm:
-                return <IconArrowDown size={16} />;
+                return <IconArrowDown size={16}/>;
             case RelationType.RelatedTerm:
-                return <IconArrowsHorizontal size={16} />;
+                return <IconArrowsHorizontal size={16}/>;
             default:
-                return <IconChevronRight size={16} />;
+                return <IconChevronRight size={16}/>;
         }
     };
 
@@ -164,7 +164,7 @@ const StaggeredRelatedWords = ({
                 >
                     <Text c="dimmed" size="sm" mb="lg" display="inline-block">
                         <Group gap={6}>
-                            <IconInfoCircle size={14} />
+                            <IconInfoCircle size={14}/>
                             <span>What are {relationInfo.displayName.toLowerCase()}?</span>
                         </Group>
                     </Text>
@@ -213,7 +213,7 @@ const StaggeredRelatedWords = ({
                                                         handleCopyWord(word);
                                                     }}
                                                 >
-                                                    <IconCopy size={14} />
+                                                    <IconCopy size={14}/>
                                                 </ActionIcon>
                                             </Tooltip>
                                         </Flex>
