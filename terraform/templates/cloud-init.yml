@@ -1,0 +1,260 @@
+package_update: true
+package_upgrade: true
+
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+  - software-properties-common
+  - ufw
+  - fail2ban
+  - htop
+  - nano
+  - rsync
+  - tmux
+  - nginx
+
+runcmd:
+
+  - curl -fsSL https://get.docker.com -o get-docker.sh
+  - sh get-docker.sh
+  - systemctl enable docker
+  - systemctl start docker
+
+
+  - curl -L "https://github.com/docker/compose/releases/download/v2.20.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+  - chmod +x /usr/local/bin/docker-compose
+
+  - mkdir -p /data
+  - mkfs.ext4 -F /dev/disk/by-id/scsi-0HC_Volume_${volume_id} || true
+  - echo "/dev/disk/by-id/scsi-0HC_Volume_${volume_id} /data ext4 discard,nofail,defaults 0 0" >> /etc/fstab
+  - mount -a
+  - mkdir -p /data/postgres /data/meilisearch
+  - mkdir -p /backup
+
+
+  - chown -R 1000:1000 /data/meilisearch
+  - chmod -R 755 /data/postgres /data/meilisearch
+
+
+  - rm -f /etc/nginx/sites-enabled/default
+
+
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow ssh
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw allow 3000/tcp
+  - ufw allow 7700/tcp
+  - ufw --force enable
+
+
+  - systemctl enable fail2ban
+  - systemctl start fail2ban
+
+  - echo "${github_token}" | docker login ghcr.io -u ${github_username} --password-stdin
+  - docker network create thesaurus-network || true
+
+write_files:
+
+  - path: /etc/nginx/sites-available/thesaurus
+    permissions: '0644'
+    content: |
+      server {
+          listen 80;
+          listen [::]:80;
+          server_name _;
+
+          # Frontend
+          location / {
+              proxy_pass http://localhost:8080;
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection 'upgrade';
+              proxy_set_header Host $host;
+              proxy_cache_bypass $http_upgrade;
+          }
+
+          # API
+          location /api {
+              rewrite ^/api/(.*) /$1 break;
+              proxy_pass http://localhost:3000;
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection 'upgrade';
+              proxy_set_header Host $host;
+              proxy_cache_bypass $http_upgrade;
+          }
+
+          # Health check
+          location /health {
+              proxy_pass http://localhost:3000/health;
+              proxy_http_version 1.1;
+              proxy_set_header Host $host;
+              proxy_cache_bypass $http_upgrade;
+          }
+      }
+
+  - path: /root/enable-nginx.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      ln -sf /etc/nginx/sites-available/thesaurus /etc/nginx/sites-enabled/
+      nginx -t && systemctl reload nginx
+
+  - path: /root/backup.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      DATE=$(date +%Y-%m-%d)
+      BACKUP_DIR="/backup/$DATE"
+
+      mkdir -p "$BACKUP_DIR"
+
+      # Backup PostgreSQL data
+      echo "Backing up PostgreSQL database..."
+      docker exec thesaurus-postgres pg_dump -U postgres thesaurus > "$BACKUP_DIR/thesaurus_db.sql"
+
+      # Backup MeiliSearch data
+      echo "Backing up MeiliSearch data..."
+      rsync -a /data/meilisearch/ "$BACKUP_DIR/meilisearch/"
+
+      # Compress backup
+      echo "Compressing backup..."
+      tar -czf "$BACKUP_DIR.tar.gz" -C /backup "$DATE"
+      rm -rf "$BACKUP_DIR"
+
+      # Keep only the last 7 days of backups
+      find /backup -name "*.tar.gz" -type f -mtime +7 -delete
+
+      echo "Backup completed: $BACKUP_DIR.tar.gz"
+
+  - path: /root/restore.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      if [ $# -ne 1 ]; then
+          echo "Usage: $0 <backup-file.tar.gz>"
+          exit 1
+      fi
+
+      BACKUP_FILE=$1
+
+      if [ ! -f "$BACKUP_FILE" ]; then
+          echo "Backup file not found: $BACKUP_FILE"
+          exit 1
+      fi
+
+      # Extract backup
+      TEMP_DIR=$(mktemp -d)
+      tar -xzf "$BACKUP_FILE" -C "$TEMP_DIR"
+
+      # Extract date from filename
+      BACKUP_DATE=$(basename "$BACKUP_FILE" .tar.gz)
+
+      # Stop the services
+      cd /root
+      docker-compose down
+
+      # Restore PostgreSQL
+      echo "Restoring PostgreSQL database..."
+      docker-compose up -d postgres
+      sleep 10
+      cat "$TEMP_DIR/$BACKUP_DATE/thesaurus_db.sql" | docker exec -i thesaurus-postgres psql -U postgres -d thesaurus
+
+      # Restore MeiliSearch
+      echo "Restoring MeiliSearch data..."
+      rsync -a "$TEMP_DIR/$BACKUP_DATE/meilisearch/" /data/meilisearch/
+
+      # Start all services
+      docker-compose up -d
+
+      # Clean up
+      rm -rf "$TEMP_DIR"
+
+      echo "Restore completed from $BACKUP_FILE"
+
+  - path: /root/update.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      echo "Pulling latest Docker images..."
+      cd /root
+      docker-compose pull
+
+      echo "Restarting services..."
+      docker-compose up -d
+
+      echo "Update completed"
+
+  - path: /root/monitor.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -e
+
+      # Check disk space
+      DISK_USAGE=$(df -h | grep '/dev/sda1' | awk '{print $5}' | sed 's/%//')
+      if [ "$DISK_USAGE" -gt 85 ]; then
+          echo "WARNING: Disk usage is at $DISK_USAGE%"
+      fi
+
+      # Check memory usage
+      MEM_USAGE=$(free -m | awk '/^Mem:/ {print $3/$2 * 100}' | cut -d. -f1)
+      if [ "$MEM_USAGE" -gt 90 ]; then
+          echo "WARNING: Memory usage is at $MEM_USAGE%"
+      fi
+
+      # Check Docker service
+      if ! systemctl is-active --quiet docker; then
+          echo "ERROR: Docker service is not running"
+      fi
+
+      # Check running containers
+      for CONTAINER in thesaurus-postgres thesaurus-meilisearch thesaurus-api thesaurus-frontend; do
+          if ! docker ps --format '{{.Names}}' | grep -q "$CONTAINER"; then
+              echo "ERROR: Container $CONTAINER is not running"
+          fi
+      done
+
+      # Check NGINX
+      if ! systemctl is-active --quiet nginx; then
+          echo "ERROR: NGINX service is not running"
+      fi
+
+  - path: /etc/cron.d/thesaurus-monitor
+    permissions: '0644'
+    content: |
+      */15 * * * * root /root/monitor.sh | tee -a /var/log/thesaurus-monitor.log
+
+  - path: /etc/cron.d/thesaurus-backup
+    permissions: '0644'
+    content: |
+      0 2 * * * root /root/backup.sh
+
+  - path: /etc/logrotate.d/docker
+    permissions: '0644'
+    content: |
+      /var/lib/docker/containers/*/*.log {
+          daily
+          rotate 7
+          compress
+          delaycompress
+          missingok
+          notifempty
+          copytruncate
+      }
+
+runcmd:
+  - /root/enable-nginx.sh
+
+final_message: "Cloud-init has completed. The Thesaurus platform is being deployed."

@@ -3,15 +3,15 @@ use crate::{
     error::AppError,
     models::word::{RelationType, SearchFilters},
     services::search::{
-        get_all_word_relations, get_relations, get_word_by_exact_match,
-        get_word_definition, get_word_examples, search_words
+        get_all_word_relations, get_relations, get_word_by_exact_match, get_word_definition,
+        get_word_examples, search_words,
     },
 };
 use axum::{
     extract::{Path, Query, State},
     Json,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct SearchQuery {
@@ -46,8 +46,9 @@ pub async fn search(
         &query.q,
         query.offset,
         query.limit,
-        Some(filters)
-    ).await?;
+        Some(filters),
+    )
+    .await?;
 
     Ok(Json(serde_json::json!({
         "status": "success",

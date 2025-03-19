@@ -14,7 +14,6 @@ pub async fn create_user(
     email: &str,
     password: &str,
 ) -> Result<User, AppError> {
-    // Check if user already exists
     let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = $1")
         .bind(email)
         .fetch_optional(pool)
@@ -24,29 +23,22 @@ pub async fn create_user(
         return Err(AppError::UserAlreadyExists);
     }
 
-    // Hash password
     let hashed_password = hash(password, DEFAULT_COST)?;
 
-    // Insert new user
     let user = sqlx::query_as::<_, User>(
         "INSERT INTO users (id, name, email, password) VALUES ($1, $2, $3, $4) RETURNING *",
     )
-        .bind(Uuid::new_v4())
-        .bind(name)
-        .bind(email)
-        .bind(hashed_password)
-        .fetch_one(pool)
-        .await?;
+    .bind(Uuid::new_v4())
+    .bind(name)
+    .bind(email)
+    .bind(hashed_password)
+    .fetch_one(pool)
+    .await?;
 
     Ok(user)
 }
 
-pub async fn login_user(
-    pool: &PgPool,
-    email: &str,
-    password: &str,
-) -> Result<User, AppError> {
-    // Find user by email
+pub async fn login_user(pool: &PgPool, email: &str, password: &str) -> Result<User, AppError> {
     let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = $1")
         .bind(email)
         .fetch_optional(pool)
@@ -54,7 +46,6 @@ pub async fn login_user(
 
     let user = user.ok_or(AppError::InvalidCredentials)?;
 
-    // Verify password
     let is_valid = verify(password, &user.password)?;
     if !is_valid {
         return Err(AppError::InvalidCredentials);

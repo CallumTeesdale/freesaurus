@@ -1,0 +1,22 @@
+FROM rust:latest
+
+# Install development dependencies
+RUN cargo install cargo-watch --locked
+
+WORKDIR /app
+
+# Copy manifests
+COPY Cargo.toml ./
+# Don't copy Cargo.lock - it will be generated with the correct version
+
+# Create a minimal src/main.rs to pre-build dependencies
+RUN mkdir -p src && \
+    echo 'fn main() { println!("Dummy build for caching dependencies"); }' > src/main.rs && \
+    cargo build && \
+    rm -rf src target/debug/deps target/debug/incremental
+
+# Set up for development
+EXPOSE 3000
+
+# The command will be provided in docker-compose.yml
+CMD ["cargo", "watch", "-x", "run"]

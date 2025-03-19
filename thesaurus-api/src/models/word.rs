@@ -5,12 +5,12 @@ pub struct Word {
     pub id: String,
     pub word: String,
     pub definitions: Vec<String>,
-    pub pos: Vec<String>,        // Parts of speech
+    pub pos: Vec<String>, // Parts of speech
     pub synonyms: Vec<String>,
     pub antonyms: Vec<String>,
-    pub broader_terms: Vec<String>, // Hypernyms
+    pub broader_terms: Vec<String>,  // Hypernyms
     pub narrower_terms: Vec<String>, // Hyponyms
-    pub related_terms: Vec<String>, // Other relations
+    pub related_terms: Vec<String>,  // Other relations
     pub examples: Vec<String>,
 }
 
@@ -24,8 +24,8 @@ pub struct SearchResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchFilters {
-    pub pos: Option<String>,      // Filter by part of speech
-    pub exact_match: Option<bool>, // Exact word match
+    pub pos: Option<String>,
+    pub exact_match: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -35,13 +35,12 @@ pub struct RelationResponse {
     pub related_words: Vec<String>,
 }
 
-// Enum to represent all possible relation types
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum RelationType {
     Synonym,
     Antonym,
-    BroaderTerm,   // Hypernym
-    NarrowerTerm,  // Hyponym
+    BroaderTerm,
+    NarrowerTerm,
     RelatedTerm,
 }
 

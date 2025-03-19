@@ -1,0 +1,202 @@
+name: Deploy to Hetzner
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  build_and_test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev pkg-config
+
+      - name: Build and test API
+        working-directory: ./thesaurus-api
+        run: |
+          cargo build --release
+          cargo test
+
+      - name: Build and test WordNet Importer
+        working-directory: ./wordnet-importer
+        run: |
+          cargo build --release
+          cargo test
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: thesaurus-frontend/package-lock.json
+
+      - name: Install Frontend dependencies
+        working-directory: ./thesaurus-frontend
+        run: npm ci
+
+      - name: Build Frontend
+        working-directory: ./thesaurus-frontend
+        run: npm run build
+
+      - name: Test Frontend
+        working-directory: ./thesaurus-frontend
+        run: npm test || true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: downcase REPO
+        run: |
+          echo "REPO=$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Build and push API Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./thesaurus-api
+          file: ./thesaurus-api/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ env.REPO }}/thesaurus-api:latest
+            ghcr.io/${{ env.REPO }}/thesaurus-api:${{ github.sha }}
+
+      - name: Build and push WordNet Importer Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./wordnet-importer
+          file: ./wordnet-importer/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ env.REPO}}/wordnet-importer:latest
+            ghcr.io/${{ env.REPO}}/wordnet-importer:${{ github.sha }}
+
+      - name: Build and push Frontend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./thesaurus-frontend
+          file: ./thesaurus-frontend/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ env.REPO}}/thesaurus-frontend:latest
+            ghcr.io/${{ env.REPO }}/thesaurus-frontend:${{ github.sha }}
+
+  deploy:
+    name: Deploy to Hetzner
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      - name: Create terraform.tfvars file
+        run: |
+          cat > ./terraform/terraform.tfvars << EOL
+          hcloud_token       = "${{ secrets.HETZNER_API_TOKEN }}"
+          environment        = "${{ github.event.inputs.environment || 'production' }}"
+          jwt_secret         = "${{ secrets.JWT_SECRET }}"
+          meili_master_key   = "${{ secrets.MEILI_MASTER_KEY }}"
+          postgres_password  = "${{ secrets.POSTGRES_PASSWORD }}"
+          api_image          = "ghcr.io/${{ github.repository }}/thesaurus-api:${{ github.sha }}"
+          frontend_image     = "ghcr.io/${{ github.repository }}/thesaurus-frontend:${{ github.sha }}"
+          importer_image     = "ghcr.io/${{ github.repository }}/wordnet-importer:${{ github.sha }}"
+          domain             = "${{ secrets.DOMAIN_NAME || '' }}"
+          email              = "${{ secrets.ADMIN_EMAIL || '' }}"
+          EOL
+
+      - name: Create SSH key files
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PUBLIC_KEY }}" > ~/.ssh/id_rsa.pub
+          chmod 644 ~/.ssh/id_rsa.pub
+
+      - name: Update SSH key paths in terraform.tfvars
+        run: |
+          echo "ssh_private_key_path = \"$HOME/.ssh/id_rsa\"" >> ./terraform/terraform.tfvars
+          echo "ssh_public_key_path = \"$HOME/.ssh/id_rsa.pub\"" >> ./terraform/terraform.tfvars
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: ./terraform
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: ./terraform
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: ./terraform
+        run: terraform apply -auto-approve tfplan
+
+      - name: Get outputs
+        working-directory: ./terraform
+        run: |
+          echo "SERVER_IP=$(terraform output -raw server_ip)" >> $GITHUB_ENV
+          echo "APP_URL=$(terraform output -raw app_url)" >> $GITHUB_ENV
+          echo "API_URL=$(terraform output -raw api_url)" >> $GITHUB_ENV
+          echo "MEILI_URL=$(terraform output -raw meilisearch_url)" >> $GITHUB_ENV
+
+      - name: Deployment Summary
+        run: |
+          echo "# Deployment Complete :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "Your Thesaurus Platform has been deployed!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Access URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- **Web Application:** ${{ env.APP_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **API:** ${{ env.API_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **MeiliSearch:** ${{ env.MEILI_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Server Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Server IP:** ${{ env.SERVER_IP }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **SSH Access:** `ssh root@${{ env.SERVER_IP }}`" >> $GITHUB_STEP_SUMMARY

@@ -1,7 +1,6 @@
-// db/postgres.rs
-use sqlx::postgres::PgPool;
-use meilisearch_sdk::client::Client as MeiliClient;
 use crate::config::Config;
+use meilisearch_sdk::client::Client as MeiliClient;
+use sqlx::postgres::PgPool;
 
 #[derive(Clone)]
 pub struct AppState {

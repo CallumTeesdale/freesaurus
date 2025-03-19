@@ -50,11 +50,17 @@ impl IntoResponse for AppError {
             AppError::Bcrypt(ref e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
             AppError::Meilisearch(ref e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized".to_string()),
-            AppError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists".to_string()),
-            AppError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials".to_string()),
+            AppError::UserAlreadyExists => {
+                (StatusCode::CONFLICT, "User already exists".to_string())
+            }
+            AppError::InvalidCredentials => {
+                (StatusCode::BAD_REQUEST, "Invalid credentials".to_string())
+            }
             AppError::NotFound(ref e) => (StatusCode::NOT_FOUND, e.to_string()),
             AppError::BadRequest(ref e) => (StatusCode::BAD_REQUEST, e.to_string()),
-            AppError::InternalServerError(ref e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+            AppError::InternalServerError(ref e) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+            }
             AppError::ValidationError(ref e) => (StatusCode::BAD_REQUEST, e.to_string()),
         };
 

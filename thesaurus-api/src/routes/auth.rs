@@ -17,25 +17,24 @@ pub async fn register(
     State(state): State<AppState>,
     Json(payload): Json<RegisterUserSchema>,
 ) -> Result<impl IntoResponse, AppError> {
-    // Validate input
-    payload.validate().map_err(|e| AppError::ValidationError(e.to_string()))?;
+    payload
+        .validate()
+        .map_err(|e| AppError::ValidationError(e.to_string()))?;
 
-    // Create user in database
     let user = create_user(&state.db, &payload.name, &payload.email, &payload.password).await?;
 
-    // Generate JWT token
     let token = generate_token(&state.config, &user.id)?;
 
-    // Set cookie with token
     let mut headers = HeaderMap::new();
     headers.insert(
         header::SET_COOKIE,
         format!(
             "token={}; Max-Age={}; Path=/; HttpOnly; SameSite=Strict",
-            token, state.config.jwt_maxage * 60
+            token,
+            state.config.jwt_maxage * 60
         )
-            .parse()
-            .unwrap(),
+        .parse()
+        .unwrap(),
     );
 
     Ok((
@@ -52,25 +51,24 @@ pub async fn login(
     State(state): State<AppState>,
     Json(payload): Json<LoginUserSchema>,
 ) -> Result<impl IntoResponse, AppError> {
-    // Validate input
-    payload.validate().map_err(|e| AppError::ValidationError(e.to_string()))?;
+    payload
+        .validate()
+        .map_err(|e| AppError::ValidationError(e.to_string()))?;
 
-    // Authenticate user
     let user = login_user(&state.db, &payload.email, &payload.password).await?;
 
-    // Generate JWT token
     let token = generate_token(&state.config, &user.id)?;
 
-    // Set cookie with token
     let mut headers = HeaderMap::new();
     headers.insert(
         header::SET_COOKIE,
         format!(
             "token={}; Max-Age={}; Path=/; HttpOnly; SameSite=Strict",
-            token, state.config.jwt_maxage * 60
+            token,
+            state.config.jwt_maxage * 60
         )
-            .parse()
-            .unwrap(),
+        .parse()
+        .unwrap(),
     );
 
     Ok((
@@ -87,7 +85,6 @@ pub async fn refresh_token(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, AppError> {
-    // Get token from Authorization header
     let token = headers
         .get(header::AUTHORIZATION)
         .and_then(|auth_header| auth_header.to_str().ok())
@@ -100,23 +97,21 @@ pub async fn refresh_token(
         })
         .ok_or(AppError::Unauthorized)?;
 
-    // Verify the token
     let claims = verify_token(&state.config, &token)?;
     let user_id = uuid::Uuid::parse_str(&claims.sub).map_err(|_| AppError::Unauthorized)?;
 
-    // Generate a new token
     let new_token = generate_token(&state.config, &user_id)?;
 
-    // Set new cookie with token
     let mut response_headers = HeaderMap::new();
     response_headers.insert(
         header::SET_COOKIE,
         format!(
             "token={}; Max-Age={}; Path=/; HttpOnly; SameSite=Strict",
-            new_token, state.config.jwt_maxage * 60
+            new_token,
+            state.config.jwt_maxage * 60
         )
-            .parse()
-            .unwrap(),
+        .parse()
+        .unwrap(),
     );
 
     Ok((

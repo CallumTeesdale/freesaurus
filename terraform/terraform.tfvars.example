@@ -1,0 +1,29 @@
+# Required variables
+hcloud_token       = "your_hetzner_api_token"
+jwt_secret         = "your_secure_jwt_secret"
+meili_master_key   = "your_secure_meilisearch_key"
+postgres_password  = "your_secure_postgres_password"
+
+# Optional variables
+environment        = "production"  # or "staging"
+server_name        = "thesaurus"
+region             = "fsn1"        # Falkenstein, Germany
+server_type        = "cax11"       # ARM-based Ampere instance with 2 vCPUs, 4 GB RAM
+volume_size        = 50            # in GB
+
+# SSH key paths (adjust for your system)
+ssh_public_key_path  = "~/.ssh/id_rsa.pub"
+ssh_private_key_path = "~/.ssh/id_rsa"
+
+# Docker images
+api_image         = "ghcr.io/callumteesdale/thesaurus-api:latest"
+frontend_image    = "ghcr.io/callumteesdale/thesaurus-frontend:latest"
+importer_image    = "ghcr.io/callumteesdale/wordnet-importer:latest"
+
+# Domain configuration (optional)
+domain            = ""
+email             = ""
+
+# Gihub
+github_username  = "callumteesdale"
+github_token     = "your_github_token"
