@@ -1,8 +1,10 @@
 import React, {useRef, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import {
+    Badge,
     Box,
     Group,
+    Highlight,
     Loader,
     Popover,
     ScrollArea,
@@ -16,6 +18,7 @@ import {useDebouncedValue} from "@mantine/hooks";
 import {IconSearch} from "@tabler/icons-react";
 
 import {useSearchWords} from "@/hooks/useThesaurusQueries";
+import {formatPOS} from "@/utils/formatters";
 
 const SearchBar = () => {
     const [query, setQuery] = useState("");
@@ -31,14 +34,15 @@ const SearchBar = () => {
     } = useSearchWords(
         debouncedQuery,
         0,
-        5,
+        8,
         undefined,
         debouncedQuery.length >= 2
     );
 
     const results = data?.hits || [];
+    const totalResults = data?.total || 0;
 
-    const showResults = debouncedQuery.length >= 2 && results.length > 0;
+    const showResults = debouncedQuery.length >= 2;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,6 +57,22 @@ const SearchBar = () => {
         navigate(`/word/${encodeURIComponent(word)}`);
         setQuery("");
         setOpened(false);
+    };
+
+    const getPosBadgeColor = (pos: string): string => {
+        const posColorMap: Record<string, string> = {
+            n: "blue",
+            v: "green",
+            adj: "violet",
+            adv: "teal",
+            prep: "orange",
+            conj: "pink",
+            pron: "cyan",
+            interj: "red",
+            det: "indigo",
+        };
+
+        return posColorMap[pos.toLowerCase()] || "gray";
     };
 
     return (
@@ -70,19 +90,35 @@ const SearchBar = () => {
                             ref={inputRef}
                             placeholder="Search for a word..."
                             value={query}
-                            onChange={(e) => setQuery(e.currentTarget.value)}
+                            onChange={(e) => {
+                                setQuery(e.currentTarget.value);
+                                if (e.currentTarget.value.length >= 2) {
+                                    setOpened(true);
+                                } else {
+                                    setOpened(false);
+                                }
+                            }}
                             onFocus={() => {
-                                if (showResults) {
+                                if (debouncedQuery.length >= 2) {
                                     setOpened(true);
                                 }
                             }}
                             onClick={() => {
-                                if (showResults) {
+                                if (debouncedQuery.length >= 2) {
                                     setOpened(true);
                                 }
                             }}
                             rightSection={
-                                isLoading ? <Loader size="xs"/> : <IconSearch size={16} color={theme.colors.blue[6]}/>
+                                isLoading ?
+                                    <Loader size="xs"/> :
+                                    <Group gap="xs">
+                                        {totalResults > 0 && debouncedQuery.length >= 2 && (
+                                            <Badge size="sm" radius="xl" variant="light" color="blue">
+                                                {totalResults}
+                                            </Badge>
+                                        )}
+                                        <IconSearch size={16} color={theme.colors.blue[6]}/>
+                                    </Group>
                             }
                             aria-label="Search for words"
                             size="md"
@@ -98,7 +134,10 @@ const SearchBar = () => {
                                     },
                                 },
                                 rightSection: {
-                                    pointerEvents: "none",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    paddingRight: theme.spacing.xs,
+                                    pointerEvents: 'none',
                                 },
                             })}
                         />
@@ -106,37 +145,77 @@ const SearchBar = () => {
                 </Popover.Target>
 
                 <Popover.Dropdown>
-                    <ScrollArea.Autosize mah={300}>
+                    <ScrollArea.Autosize mah={350}>
                         <Stack gap="xs">
                             {results.length > 0 ? (
-                                results.map((result) => (
-                                    <UnstyledButton
-                                        key={result.id}
-                                        onClick={() => handleSelectWord(result.word)}
-                                        py="xs"
-                                        px="sm"
-                                        style={(theme) => ({
-                                            borderRadius: theme.radius.sm,
-                                            "&:hover": {
-                                                backgroundColor: theme.colors.gray[0],
-                                            },
-                                        })}
-                                    >
-                                        <Group>
-                                            <Box>
-                                                <Text fw={500}>{result.word}</Text>
-                                                {result.pos.length > 0 && (
-                                                    <Text size="xs" c="dimmed">
-                                                        {result.pos.join(", ")}
-                                                    </Text>
-                                                )}
-                                            </Box>
-                                        </Group>
-                                    </UnstyledButton>
-                                ))
+                                <>
+                                    <Text size="xs" c="dimmed" ta="right">
+                                        Found {totalResults} results
+                                    </Text>
+                                    {results.map((result) => (
+                                        <UnstyledButton
+                                            key={result.id}
+                                            onClick={() => handleSelectWord(result.word)}
+                                            py="xs"
+                                            px="sm"
+                                            style={(theme) => ({
+                                                borderRadius: theme.radius.sm,
+                                                transition: 'background-color 0.2s',
+                                                "&:hover": {
+                                                    backgroundColor: theme.colors.gray[0],
+                                                },
+                                            })}
+                                        >
+                                            <Group>
+                                                <Box style={{flex: 1}}>
+                                                    <Highlight highlight={query} size="md" fw={500}>
+                                                        {result.word}
+                                                    </Highlight>
+
+                                                    {result.definitions.length > 0 && (
+                                                        <Text size="xs" c="dimmed" lineClamp={1}>
+                                                            {result.definitions[0]}
+                                                        </Text>
+                                                    )}
+                                                </Box>
+                                                <Group gap="xs">
+                                                    {result.pos.slice(0, 2).map((pos, index) => (
+                                                        <Badge
+                                                            key={index}
+                                                            size="xs"
+                                                            color={getPosBadgeColor(pos)}
+                                                            variant="light"
+                                                        >
+                                                            {formatPOS(pos)}
+                                                        </Badge>
+                                                    ))}
+                                                </Group>
+                                            </Group>
+                                        </UnstyledButton>
+                                    ))}
+                                    {totalResults > results.length && (
+                                        <UnstyledButton
+                                            onClick={() => handleSelectWord(query)}
+                                            py="xs"
+                                            px="sm"
+                                            style={(theme) => ({
+                                                borderRadius: theme.radius.sm,
+                                                backgroundColor: theme.colors.blue[0],
+                                                textAlign: 'center',
+                                                "&:hover": {
+                                                    backgroundColor: theme.colors.blue[1],
+                                                },
+                                            })}
+                                        >
+                                            <Text c="blue" size="sm">
+                                                See all {totalResults} results for "{query}"
+                                            </Text>
+                                        </UnstyledButton>
+                                    )}
+                                </>
                             ) : (
                                 <Text c="dimmed" ta="center" size="sm" py="sm">
-                                    {isLoading ? "Searching..." : "No results found"}
+                                    {isLoading ? "Searching..." : debouncedQuery.length >= 2 ? "No results found" : "Type to search"}
                                 </Text>
                             )}
                         </Stack>
