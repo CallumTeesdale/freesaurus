@@ -1,5 +1,5 @@
 import axiosInstance from "./axiosConfig";
-import {AuthResponse, LoginUserData, RegisterUserData, TokenResponse,} from "../types/auth.types";
+import {AuthResponse, LoginUserData, RegisterUserData, TokenResponse,} from "@/types";
 
 const AUTH_ENDPOINTS = {
     REGISTER: "/auth/register",

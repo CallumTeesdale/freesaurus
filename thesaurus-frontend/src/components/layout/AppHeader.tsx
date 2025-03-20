@@ -1,18 +1,18 @@
 import {useContext, useEffect} from "react";
 import {Link, useLocation, useNavigate} from "react-router-dom";
 import {
-  Avatar,
-  Box,
-  Burger,
-  Button,
-  Container,
-  Flex,
-  Group,
-  Menu,
-  rem,
-  Text,
-  Title,
-  UnstyledButton,
+    Avatar,
+    Box,
+    Burger,
+    Button,
+    Container,
+    Flex,
+    Group,
+    Menu,
+    rem,
+    Text,
+    Title,
+    UnstyledButton,
 } from "@mantine/core";
 import {useDisclosure} from "@mantine/hooks";
 import {IconChevronDown, IconLogout, IconSettings, IconUser,} from "@tabler/icons-react";
@@ -33,7 +33,7 @@ const AppHeader = () => {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "." &&
+            if (e.key === "/" &&
                 document.activeElement?.tagName !== "INPUT" &&
                 document.activeElement?.tagName !== "TEXTAREA") {
                 e.preventDefault();
@@ -64,7 +64,6 @@ const AppHeader = () => {
     return (
         <Container fluid h={60} px="md">
             <Flex h="100%" align="center" justify="space-between">
-                {/* Logo and title - only show on non-homepage */}
                 <Group>
                     {!isHomePage ? (
                         <UnstyledButton component={Link} to="/">

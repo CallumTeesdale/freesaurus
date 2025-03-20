@@ -1,16 +1,16 @@
-import {useRef, useState} from "react";
+import React, {useRef, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import {
-  Box,
-  Group,
-  Loader,
-  Popover,
-  ScrollArea,
-  Stack,
-  Text,
-  TextInput,
-  UnstyledButton,
-  useMantineTheme,
+    Box,
+    Group,
+    Loader,
+    Popover,
+    ScrollArea,
+    Stack,
+    Text,
+    TextInput,
+    UnstyledButton,
+    useMantineTheme,
 } from "@mantine/core";
 import {useDebouncedValue} from "@mantine/hooks";
 import {IconSearch} from "@tabler/icons-react";
