@@ -58,7 +58,7 @@ services:
       JWT_MAXAGE: ${jwt_maxage}
       RUST_LOG: info
       PORT: 3000
-      HOST: 127.0.0.1
+      HOST: 0.0.0.0
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:
