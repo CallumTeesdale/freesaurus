@@ -1,7 +1,7 @@
 server {
     listen 80;
     listen [::]:80;
-    server_name ${domain == "" ? "_" : domain};
+    server_name ${domain == "" ? "_" : domain} www.${domain == "" ? "_" : domain};
 
     # Frontend
     location / {
@@ -28,6 +28,25 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
+
+        location /auth/ {
+            proxy_pass http://localhost:3000/auth/;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # Add headers for cookies and CORS
+            proxy_set_header Cookie $http_cookie;
+            add_header 'Access-Control-Allow-Credentials' 'true';
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+            add_header 'Access-Control-Allow-Headers' 'Authorization,Content-Type,Accept,Origin,User-Agent,DNT,Cache-Control,X-Mx-ReqToken,Keep-Alive,X-Requested-With,If-Modified-Since';
+        }
+
 
     # Health check
     location /health {

@@ -54,6 +54,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .allow_methods(Any)
         .allow_headers(Any);
 
+    let state = db::AppState {
+        db: pool.clone(),
+        meili: meili_client,
+        config: config::Config::from_env(),
+    };
+
     let app = Router::new()
         // Health check
         .route("/health", get(routes::health::health_check))
@@ -61,6 +67,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/auth/register", post(routes::auth::register))
         .route("/auth/login", post(routes::auth::login))
         .route("/auth/refresh", post(routes::auth::refresh_token))
+        // User favorites routes
+        .nest(
+            "/api/favorites",
+            routes::favorites::favorites_router(state.clone()),
+        )
+        // User activities routes
+        .nest(
+            "/api/activities",
+            routes::activities::activities_router(state.clone()),
+        )
         // Thesaurus routes
         .route("/api/search", get(routes::thesaurus::search))
         .route("/api/word/:word", get(routes::thesaurus::get_word))
