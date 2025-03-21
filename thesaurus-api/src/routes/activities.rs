@@ -13,6 +13,7 @@ use axum::{
     routing::get,
     Extension, Json, Router,
 };
+use axum_macros::debug_handler;
 use serde::Deserialize;
 use serde_json::json;
 use sqlx::PgPool;
@@ -34,14 +35,14 @@ fn default_offset() -> i64 {
     0
 }
 
-pub fn activities_router(state: AppState) -> Router {
+pub fn activities_router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/", get(get_activities))
         .route("/recent-words", get(recent_viewed_words))
         .layer(middleware::from_fn_with_state(state, auth))
-        .with_state(state)
 }
 
+#[debug_handler]
 async fn get_activities(
     State(state): State<AppState>,
     Extension(user): Extension<User>,
@@ -60,6 +61,7 @@ async fn get_activities(
     })))
 }
 
+#[debug_handler]
 async fn recent_viewed_words(
     State(state): State<AppState>,
     Extension(user): Extension<User>,
@@ -73,12 +75,10 @@ async fn recent_viewed_words(
     })))
 }
 
-// Helper function to track word view activity
 pub async fn track_word_view(pool: &PgPool, user_id: &Uuid, word: &str) -> Result<(), AppError> {
     track_activity(pool, user_id, ActivityType::ViewWord, Some(word), None).await
 }
 
-// Helper function to track search activity
 pub async fn track_search(pool: &PgPool, user_id: &Uuid, query: &str) -> Result<(), AppError> {
     track_activity(
         pool,

@@ -102,11 +102,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/all/:word", get(routes::thesaurus::get_all_relations))
         //middleware
         .layer(cors)
-        .with_state(db::AppState {
-            db: pool.clone(),
-            meili: meili_client,
-            config: config::Config::from_env(),
-        });
+        .with_state(state);
 
     let port = std::env::var("PORT")
         .ok()

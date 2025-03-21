@@ -25,7 +25,7 @@ pub struct AddFavoriteRequest {
     word: String,
 }
 
-pub fn favorites_router(state: AppState) -> Router {
+pub fn favorites_router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/", get(get_favorites))
         .route("/", post(add_favorite))
@@ -54,6 +54,7 @@ async fn get_favorites(
     Ok(Json(favorites))
 }
 
+#[debug_handler]
 async fn add_favorite(
     State(state): State<AppState>,
     Extension(user): Extension<User>,
@@ -96,6 +97,7 @@ async fn add_favorite(
     Ok(StatusCode::CREATED)
 }
 
+#[debug_handler]
 async fn remove_favorite(
     State(state): State<AppState>,
     Extension(user): Extension<User>,
