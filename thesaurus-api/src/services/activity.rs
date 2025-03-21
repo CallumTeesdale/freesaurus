@@ -94,11 +94,11 @@ pub async fn get_recent_viewed_words(
 ) -> Result<Vec<String>, AppError> {
     let viewed_words = sqlx::query!(
         r#"
-        SELECT DISTINCT word
+        SELECT word, MAX(created_at) as last_viewed
         FROM user_activities
         WHERE user_id = $1 AND activity_type = 'view_word' AND word IS NOT NULL
-        ORDER BY MAX(created_at) DESC
         GROUP BY word
+        ORDER BY last_viewed DESC
         LIMIT $2
         "#,
         user_id,

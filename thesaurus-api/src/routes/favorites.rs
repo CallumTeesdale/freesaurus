@@ -8,7 +8,6 @@ use axum::{
     routing::{delete, get, post},
     Extension, Json, Router,
 };
-use axum_macros::debug_handler;
 use meilisearch_sdk::search::SearchResults;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -31,12 +30,12 @@ pub fn favorites_router(state: AppState) -> Router<AppState> {
         .route("/", post(add_favorite))
         .route("/:word", delete(remove_favorite))
         .layer(middleware::from_fn_with_state(state.clone(), auth))
+        .with_state(state)
 }
 
-#[debug_handler]
 async fn get_favorites(
-    State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    state: State<AppState>,
+    user: Extension<User>,
 ) -> Result<Json<Vec<FavoriteResponse>>, AppError> {
     let favorites = sqlx::query_as!(
         FavoriteResponse,
@@ -54,11 +53,10 @@ async fn get_favorites(
     Ok(Json(favorites))
 }
 
-#[debug_handler]
 async fn add_favorite(
-    State(state): State<AppState>,
-    Extension(user): Extension<User>,
-    Json(payload): Json<AddFavoriteRequest>,
+    state: State<AppState>,
+    user: Extension<User>,
+    payload: Json<AddFavoriteRequest>,
 ) -> Result<StatusCode, AppError> {
     let word = payload.word.trim().to_lowercase();
 
@@ -66,7 +64,6 @@ async fn add_favorite(
         return Err(AppError::BadRequest("Word cannot be empty".to_string()));
     }
 
-    // Check if word exists in Meilisearch first
     let index = state.meili.index("words");
     let filter = format!("word = \"{}\"", word);
 
@@ -81,7 +78,6 @@ async fn add_favorite(
         )));
     }
 
-    // Insert or ignore if already exists
     sqlx::query!(
         r#"
         INSERT INTO user_favorites (user_id, word)
@@ -97,13 +93,12 @@ async fn add_favorite(
     Ok(StatusCode::CREATED)
 }
 
-#[debug_handler]
 async fn remove_favorite(
-    State(state): State<AppState>,
-    Extension(user): Extension<User>,
-    Path(word): Path<String>,
+    state: State<AppState>,
+    user: Extension<User>,
+    path: Path<String>,
 ) -> Result<StatusCode, AppError> {
-    let word = word.trim().to_lowercase();
+    let word = path.trim().to_lowercase();
 
     let result = sqlx::query!(
         r#"

@@ -60,47 +60,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config: config::Config::from_env(),
     };
 
-    let app = Router::new()
-        // Health check
-        .route("/health", get(routes::health::health_check))
-        // Auth routes
-        .route("/auth/register", post(routes::auth::register))
-        .route("/auth/login", post(routes::auth::login))
-        .route("/auth/refresh", post(routes::auth::refresh_token))
-        // User favorites routes
-        .nest(
-            "/api/favorites",
-            routes::favorites::favorites_router(state.clone()),
-        )
-        // User activities routes
-        .nest(
-            "/api/activities",
-            routes::activities::activities_router(state.clone()),
-        )
-        // Thesaurus routes
-        .route("/api/search", get(routes::thesaurus::search))
-        .route("/api/word/:word", get(routes::thesaurus::get_word))
-        .route("/api/synonyms/:word", get(routes::thesaurus::get_synonyms))
-        .route("/api/antonyms/:word", get(routes::thesaurus::get_antonyms))
+    let auth_routes = Router::new()
+        .route("/register", post(routes::auth::register))
+        .route("/login", post(routes::auth::login))
+        .route("/refresh", post(routes::auth::refresh_token))
+        .with_state(state.clone());
+
+    let api_routes = Router::new()
+        .route("/search", get(routes::thesaurus::search))
+        .route("/word/:word", get(routes::thesaurus::get_word))
+        .route("/synonyms/:word", get(routes::thesaurus::get_synonyms))
+        .route("/antonyms/:word", get(routes::thesaurus::get_antonyms))
+        .route("/broader/:word", get(routes::thesaurus::get_broader_terms))
         .route(
-            "/api/broader/:word",
-            get(routes::thesaurus::get_broader_terms),
-        )
-        .route(
-            "/api/narrower/:word",
+            "/narrower/:word",
             get(routes::thesaurus::get_narrower_terms),
         )
-        .route(
-            "/api/related/:word",
-            get(routes::thesaurus::get_related_terms),
+        .route("/related/:word", get(routes::thesaurus::get_related_terms))
+        .route("/definition/:word", get(routes::thesaurus::get_definition))
+        .route("/examples/:word", get(routes::thesaurus::get_examples))
+        .route("/all/:word", get(routes::thesaurus::get_all_relations))
+        .nest(
+            "/favorites",
+            routes::favorites::favorites_router(state.clone()),
         )
-        .route(
-            "/api/definition/:word",
-            get(routes::thesaurus::get_definition),
+        .nest(
+            "/activities",
+            routes::activities::activities_router(state.clone()),
         )
-        .route("/api/examples/:word", get(routes::thesaurus::get_examples))
-        .route("/api/all/:word", get(routes::thesaurus::get_all_relations))
-        //middleware
+        .with_state(state.clone());
+
+    let app = Router::new()
+        .route("/health", get(routes::health::health_check))
+        .nest("/auth", auth_routes)
+        .nest("/api", api_routes)
         .layer(cors)
         .with_state(state);
 

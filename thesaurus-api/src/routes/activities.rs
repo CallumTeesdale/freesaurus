@@ -13,7 +13,6 @@ use axum::{
     routing::get,
     Extension, Json, Router,
 };
-use axum_macros::debug_handler;
 use serde::Deserialize;
 use serde_json::json;
 use sqlx::PgPool;
@@ -39,14 +38,14 @@ pub fn activities_router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/", get(get_activities))
         .route("/recent-words", get(recent_viewed_words))
-        .layer(middleware::from_fn_with_state(state, auth))
+        .layer(middleware::from_fn_with_state(state.clone(), auth))
+        .with_state(state)
 }
 
-#[debug_handler]
 async fn get_activities(
-    State(state): State<AppState>,
-    Extension(user): Extension<User>,
-    Query(params): Query<ActivityQueryParams>,
+    state: State<AppState>,
+    user: Extension<User>,
+    params: Query<ActivityQueryParams>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let activities = get_user_activities(&state.db, &user.id, params.limit, params.offset).await?;
 
@@ -61,11 +60,10 @@ async fn get_activities(
     })))
 }
 
-#[debug_handler]
 async fn recent_viewed_words(
-    State(state): State<AppState>,
-    Extension(user): Extension<User>,
-    Query(params): Query<ActivityQueryParams>,
+    state: State<AppState>,
+    user: Extension<User>,
+    params: Query<ActivityQueryParams>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let words = get_recent_viewed_words(&state.db, &user.id, params.limit).await?;
 
