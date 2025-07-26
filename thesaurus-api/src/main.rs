@@ -1,3 +1,5 @@
+use crate::middleware::auth::optional_auth;
+use axum::middleware::from_fn_with_state;
 use axum::{
     routing::{get, post},
     Router,
@@ -80,6 +82,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/definition/:word", get(routes::thesaurus::get_definition))
         .route("/examples/:word", get(routes::thesaurus::get_examples))
         .route("/all/:word", get(routes::thesaurus::get_all_relations))
+        .layer(from_fn_with_state(state.clone(), optional_auth))
         .nest(
             "/favorites",
             routes::favorites::favorites_router(state.clone()),

@@ -32,3 +32,41 @@ pub async fn auth(
 
     Ok(next.run(req).await)
 }
+
+pub async fn optional_auth(
+    State(state): State<AppState>,
+    mut req: Request<Body>,
+    next: Next<Body>,
+) -> Result<Response, AppError> {
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|auth_header| auth_header.to_str().ok())
+        .and_then(|auth_value| {
+            auth_value
+                .strip_prefix("Bearer ")
+                .map(|token| token.to_string())
+        });
+
+    if let Some(token) = token {
+        match verify_token(&state.config, &token) {
+            Ok(claims) => {
+                if let Ok(user_id) = Uuid::parse_str(&claims.sub) {
+                    if let Ok(Some(user)) =
+                        sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+                            .bind(user_id)
+                            .fetch_optional(&state.db)
+                            .await
+                    {
+                        req.extensions_mut().insert(user);
+                    }
+                }
+            }
+            Err(_) => {
+                // Token is invalid, but we don't want to fail the request
+            }
+        }
+    }
+
+    Ok(next.run(req).await)
+}

@@ -1,5 +1,7 @@
 import {useContext, useEffect, useState} from "react";
+import {AuthContext} from "@/contexts/AuthContext.tsx";
 import {Link, useLocation, useNavigate} from "react-router-dom";
+import {useDisclosure, useMediaQuery} from "@mantine/hooks";
 import {
     Avatar,
     Box,
@@ -11,14 +13,13 @@ import {
     Flex,
     Group,
     Menu,
-    rem,
     Stack,
     Text,
     Title,
     UnstyledButton,
-    useMantineTheme,
+    useMantineTheme
 } from "@mantine/core";
-import {useDisclosure, useMediaQuery} from "@mantine/hooks";
+import SearchBar from "@/components/thesaurus/SearchBar.tsx";
 import {
     IconChevronDown,
     IconHome,
@@ -27,11 +28,8 @@ import {
     IconSearch,
     IconSettings,
     IconUser,
-    IconUserPlus,
+    IconUserPlus
 } from "@tabler/icons-react";
-
-import {AuthContext} from "../../contexts/AuthContext";
-import SearchBar from "../thesaurus/SearchBar";
 
 const AppHeader = () => {
     const {user, isAuthenticated, logout} = useContext(AuthContext);
@@ -121,70 +119,70 @@ const AppHeader = () => {
                     )}
 
                     <Group>
+                        {/* Desktop Auth Buttons */}
                         {isAuthenticated ? (
-                            <Menu shadow="md" width={200} position="bottom-end">
-                                <Menu.Target>
-                                    <UnstyledButton>
-                                        <Group gap="xs">
-                                            <Avatar size={34} color="blue" radius="xl">
-                                                {user?.name?.charAt(0).toUpperCase() || "U"}
-                                            </Avatar>
-                                            <Box style={{flex: 1}} visibleFrom="sm">
-                                                <Text size="sm" fw={500} c={isHomePage ? "white" : undefined}>
-                                                    {user?.name}
-                                                </Text>
-                                            </Box>
-                                            <IconChevronDown
-                                                size={rem(16)}
-                                                stroke={1.5}
-                                                color={isHomePage ? "white" : undefined}
-                                            />
-                                        </Group>
-                                    </UnstyledButton>
-                                </Menu.Target>
-                                <Menu.Dropdown>
-                                    <Menu.Item
-                                        leftSection={<IconUser size={14}/>}
-                                        onClick={() => handleNavigation("/profile")}
-                                    >
-                                        Profile
-                                    </Menu.Item>
-                                    <Menu.Item
-                                        leftSection={<IconSettings size={14}/>}
-                                        onClick={() => handleNavigation("/settings")}
-                                    >
-                                        Settings
-                                    </Menu.Item>
-                                    <Menu.Divider/>
-                                    <Menu.Item
-                                        leftSection={<IconLogout size={14}/>}
-                                        onClick={handleLogout}
-                                        color="red"
-                                    >
-                                        Logout
-                                    </Menu.Item>
-                                </Menu.Dropdown>
-                            </Menu>
+                            <Box visibleFrom="sm">
+                                <Menu shadow="md" width={200} position="bottom-end">
+                                    <Menu.Target>
+                                        <Button
+                                            variant="subtle"
+                                            rightSection={<IconChevronDown size={16}/>}
+                                            leftSection={
+                                                <Avatar size="sm" color="blue" radius="xl">
+                                                    {user?.name?.charAt(0).toUpperCase() || "U"}
+                                                </Avatar>
+                                            }
+                                        >
+                                            {user?.name}
+                                        </Button>
+                                    </Menu.Target>
+                                    <Menu.Dropdown>
+                                        <Menu.Item
+                                            leftSection={<IconUser size={14}/>}
+                                            onClick={() => handleNavigation("/profile")}
+                                        >
+                                            Profile
+                                        </Menu.Item>
+                                        <Menu.Item
+                                            leftSection={<IconSettings size={14}/>}
+                                            onClick={() => handleNavigation("/settings")}
+                                        >
+                                            Settings
+                                        </Menu.Item>
+                                        <Menu.Divider/>
+                                        <Menu.Item
+                                            leftSection={<IconLogout size={14}/>}
+                                            onClick={handleLogout}
+                                            color="red"
+                                        >
+                                            Logout
+                                        </Menu.Item>
+                                    </Menu.Dropdown>
+                                </Menu>
+                            </Box>
                         ) : (
                             <Group visibleFrom="sm">
                                 <Button
                                     variant={isHomePage ? "white" : "light"}
-                                    radius="xl"
+                                    radius="md"
                                     onClick={() => handleNavigation("/login")}
+                                    leftSection={<IconLogin size={18}/>}
                                 >
                                     Login
                                 </Button>
                                 <Button
-                                    radius="xl"
+                                    radius="md"
                                     color={isHomePage ? "white" : undefined}
                                     variant={isHomePage ? "outline" : "filled"}
                                     onClick={() => handleNavigation("/register")}
+                                    leftSection={<IconUserPlus size={18}/>}
                                 >
                                     Register
                                 </Button>
                             </Group>
                         )}
 
+                        {/* Always show hamburger for mobile, regardless of auth status */}
                         <Burger
                             opened={drawerOpened}
                             onClick={openDrawer}

@@ -1,14 +1,17 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useContext, useEffect, useRef, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import {Box, Button, Flex, Group, Kbd, Paper, Text, TextInput, Title, useMantineTheme,} from "@mantine/core";
 import {IconSearch} from "@tabler/icons-react";
 import GradientBackground from "../components/ui/GradientBackground";
+import RecentSearches from "../components/profile/RecentSearches";
+import {AuthContext} from "@/contexts/AuthContext";
 
 const HomePage = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const navigate = useNavigate();
     const theme = useMantineTheme();
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const {isAuthenticated} = useContext(AuthContext);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -127,6 +130,11 @@ const HomePage = () => {
                                     Search
                                 </Button>
                             </Group>
+                            {isAuthenticated && (
+                                <Box mt="xl" style={{maxWidth: "650px", width: "650px", padding: "0 15px"}}>
+                                    <RecentSearches/>
+                                </Box>
+                            )}
                         </Paper>
                         <Text ta="center" mt="xs" size="sm" c="rgba(255,255,255,0.9)" fw={500}>
                             Press <Kbd>/</Kbd> anywhere to search

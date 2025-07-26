@@ -1,3 +1,5 @@
+use crate::models::user::User;
+use crate::routes::activities::{track_search, track_word_view};
 use crate::{
     db::AppState,
     error::AppError,
@@ -9,7 +11,7 @@ use crate::{
 };
 use axum::{
     extract::{Path, Query, State},
-    Json,
+    Extension, Json,
 };
 use serde::Deserialize;
 
@@ -35,9 +37,10 @@ fn default_limit() -> usize {
 pub async fn search(
     State(state): State<AppState>,
     Query(query): Query<SearchQuery>,
+    user: Option<Extension<User>>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let filters = SearchFilters {
-        pos: query.pos,
+        pos: query.pos.clone(),
         exact_match: query.exact_match,
     };
 
@@ -50,6 +53,10 @@ pub async fn search(
     )
     .await?;
 
+    if let Some(user) = user {
+        let _ = track_search(&state.db, &user.id, &query.q).await;
+    }
+
     Ok(Json(serde_json::json!({
         "status": "success",
         "results": search_results,
@@ -59,8 +66,13 @@ pub async fn search(
 pub async fn get_word(
     State(state): State<AppState>,
     Path(word): Path<String>,
+    user: Option<Extension<User>>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let word_result = get_word_by_exact_match(&state.meili, &word).await?;
+
+    if let (Some(user), Some(_)) = (user, &word_result) {
+        let _ = track_word_view(&state.db, &user.id, &word).await;
+    }
 
     match word_result {
         Some(word_obj) => Ok(Json(serde_json::json!({
@@ -74,8 +86,13 @@ pub async fn get_word(
 pub async fn get_synonyms(
     State(state): State<AppState>,
     Path(word): Path<String>,
+    user: Option<Extension<User>>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let synonyms = get_relations(&state.meili, &word, RelationType::Synonym).await?;
+
+    if let Some(user) = user {
+        let _ = track_word_view(&state.db, &user.id, &word).await;
+    }
 
     Ok(Json(serde_json::json!({
         "status": "success",

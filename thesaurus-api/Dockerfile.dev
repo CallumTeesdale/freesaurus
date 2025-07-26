@@ -7,11 +7,9 @@ WORKDIR /app
 
 # Copy manifests
 COPY Cargo.toml ./
-# Don't copy Cargo.lock - it will be generated with the correct version
 
 # Create a minimal src/main.rs to pre-build dependencies
 RUN mkdir -p src && \
-    echo 'fn main() { println!("Dummy build for caching dependencies"); }' > src/main.rs && \
     cargo build && \
     rm -rf src target/debug/deps target/debug/incremental
 

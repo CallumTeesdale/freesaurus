@@ -1,36 +1,36 @@
-import {useEffect, useState} from "react";
+import {useContext, useEffect, useState} from "react";
 import {
-  ActionIcon,
-  Alert,
-  Avatar,
-  Badge,
-  Box,
-  Card,
-  Flex,
-  Group,
-  Paper,
-  rem,
-  Skeleton,
-  Tabs,
-  Text,
-  ThemeIcon,
-  Title,
-  Tooltip,
-  useMantineTheme,
+    ActionIcon,
+    Alert,
+    Avatar,
+    Badge,
+    Box,
+    Card,
+    Flex,
+    Group,
+    Paper,
+    rem,
+    Skeleton,
+    Tabs,
+    Text,
+    ThemeIcon,
+    Title,
+    Tooltip,
+    useMantineTheme,
 } from "@mantine/core";
 import {
-  IconAlertCircle,
-  IconArrowDown,
-  IconArrowsHorizontal,
-  IconArrowsRightLeft,
-  IconArrowUp,
-  IconBook,
-  IconBookmark,
-  IconCopy,
-  IconExchange,
-  IconInfoCircle,
-  IconMessageCircle2,
-  IconVolume,
+    IconAlertCircle,
+    IconArrowDown,
+    IconArrowsHorizontal,
+    IconArrowsRightLeft,
+    IconArrowUp,
+    IconBook,
+    IconBookmark,
+    IconCopy,
+    IconExchange,
+    IconInfoCircle,
+    IconMessageCircle2,
+    IconVolume,
 } from "@tabler/icons-react";
 import {notifications} from "@mantine/notifications";
 
@@ -41,6 +41,12 @@ import {formatPOS} from "@/utils/formatters.ts";
 import StaggeredRelatedWords from "@/components/thesaurus/StaggeredRelatedWords.tsx";
 import {useAllRelations} from "@/hooks/useThesaurusQueries";
 import {addToFavorites, isFavorite, removeFromFavorites} from "@/utils/userDataDb";
+import {AuthContext} from "@/contexts/AuthContext.tsx";
+import {
+    addFavorite as addServerFavorite,
+    getFavorites,
+    removeFavorite as removeServerFavorite
+} from "@/api/favoritesApi";
 
 interface WordDetailProps {
     word: string;
@@ -50,6 +56,7 @@ const WordDetail = ({word}: WordDetailProps) => {
     const [activeTab, setActiveTab] = useState<string | null>("definition");
     const [favoriteStatus, setFavoriteStatus] = useState(false);
     const theme = useMantineTheme();
+    const {isAuthenticated} = useContext(AuthContext);
 
     const {
         data: wordData,
@@ -61,15 +68,21 @@ const WordDetail = ({word}: WordDetailProps) => {
     useEffect(() => {
         const checkFavoriteStatus = async () => {
             try {
-                const status = await isFavorite(word);
-                setFavoriteStatus(status);
+                if (isAuthenticated) {
+                    const favorites = await getFavorites();
+                    const isFav = favorites.some(fav => fav.word.toLowerCase() === word.toLowerCase());
+                    setFavoriteStatus(isFav);
+                } else {
+                    const status = await isFavorite(word);
+                    setFavoriteStatus(status);
+                }
             } catch (err) {
                 console.error("Error checking favorite status:", err);
             }
         };
 
         checkFavoriteStatus();
-    }, [word]);
+    }, [word, isAuthenticated]);
 
     const tabs = [
         {
@@ -144,10 +157,18 @@ const WordDetail = ({word}: WordDetailProps) => {
 
     const handleToggleFavorite = async () => {
         try {
-            if (favoriteStatus) {
-                await removeFromFavorites(word);
+            if (isAuthenticated) {
+                if (favoriteStatus) {
+                    await removeServerFavorite(word);
+                } else {
+                    await addServerFavorite(word);
+                }
             } else {
-                await addToFavorites(word);
+                if (favoriteStatus) {
+                    await removeFromFavorites(word);
+                } else {
+                    await addToFavorites(word);
+                }
             }
 
             setFavoriteStatus(!favoriteStatus);
